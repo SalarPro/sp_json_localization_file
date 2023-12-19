@@ -45,11 +45,18 @@ class _MyHomePageState extends State<MyHomePage> {
     super.initState();
   }
 
+  var searchETC = TextEditingController();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Flutter DataGrid - File Picker'),
+        title: SearchBar(
+          controller: searchETC,
+          onChanged: (value) {
+            editingDataGridSource?.search(value);
+          },
+        ),
         actions: [
           ElevatedButton(
               onPressed: () {
@@ -100,7 +107,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       child: Text(
                         filesContent[0]
                             .$2
-                            .split('\\')
+                            .split(Platform.isMacOS ? '/' : '\\')
                             .last
                             .replaceAll('.i18n.json', ''),
                         overflow: TextOverflow.ellipsis,
@@ -115,7 +122,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       child: Text(
                         filesContent[1]
                             .$2
-                            .split('\\')
+                            .split(Platform.isMacOS ? '/' : '\\')
                             .last
                             .replaceAll('.i18n.json', ''),
                         overflow: TextOverflow.ellipsis,
@@ -130,7 +137,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       child: Text(
                         filesContent[2]
                             .$2
-                            .split('\\')
+                            .split(Platform.isMacOS ? '/' : '\\')
                             .last
                             .replaceAll('.i18n.json', ''),
                         overflow: TextOverflow.ellipsis,
@@ -315,10 +322,12 @@ class MyDataGridSource extends DataGridSource {
     buildDataGridRow();
   }
 
+  List<List<String>> filesContentOriginal = [];
   List<List<String>> filesContent = [];
 
   void buildDataGridRow() {
     filesContent = fixTheKeyValues(filesContent);
+    filesContentOriginal = filesContent.map((e) => e).toList();
 
     dataGridRows = filesContent.map((element) {
       var cells = element.map((e) {
@@ -431,6 +440,7 @@ class MyDataGridSource extends DataGridSource {
       print('${column.columnName} : $columnIndex $rowIndex');
 
       filesContent[rowIndex][columnIndex] = newCellValue;
+      filesContentOriginal = filesContent.map((e) => e).toList();
 
       dataGridRows[dataRowIndex].getCells()[rowColumnIndex.columnIndex] =
           DataGridCell<String>(
@@ -518,5 +528,24 @@ class MyDataGridSource extends DataGridSource {
     }
 
     return data;
+  }
+
+  search(String text) {
+    var newData = filesContent.where((element) {
+      var key = element[0];
+      return key.contains(text);
+    }).toList();
+
+    dataGridRows = newData.map((element) {
+      var cells = element.map((e) {
+        return DataGridCell<String>(
+          columnName: e.toString(),
+          value: e,
+        );
+      }).toList();
+      return DataGridRow(cells: cells);
+    }).toList();
+
+    notifyListeners();
   }
 }
