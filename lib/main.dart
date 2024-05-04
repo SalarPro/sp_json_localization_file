@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 
@@ -31,130 +32,183 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  String? directory;
+
   bool isWebOrDesktop = true;
   List<(File file, String name)> files = [];
   List<(Map<String, String> content, String name)> filesContent = [];
+
+  var scrollController = DataGridController();
 
   /// Determine the editing action on [SfDataGrid]
   EditingGestureType editingGestureType = EditingGestureType.tap;
 
   MyDataGridSource? editingDataGridSource;
-  @override
-  void initState() {
-    // TODO: implement initState
-    super.initState();
-  }
 
   var searchETC = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: SearchBar(
-          controller: searchETC,
-          onChanged: (value) {
-            editingDataGridSource?.search(value);
+    return CallbackShortcuts(
+      bindings: {
+        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyS): () {
+          print('Save');
+          save();
+        },
+        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyR): () {
+          print('Reload');
+          onFileClicked(lDirectory: directory);
+        },
+        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyO): () {
+          print('open');
+          onFileClicked();
+        },
+        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyD): () {
+          print('open');
+          scrollController.scrollToRow(editingDataGridSource!.rows.length - 1,
+              canAnimate: true);
+        },
+        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyA): () {
+          print('add');
+          addNewRow();
+        },
+      },
+      child: Scaffold(
+        floatingActionButtonLocation: FloatingActionButtonLocation.startTop,
+        floatingActionButton: FloatingActionButton(
+          onPressed: () {
+            addNewRow();
           },
+          child: Icon(
+            Icons.add,
+          ),
         ),
-        actions: [
-          ElevatedButton(
-              onPressed: () {
-                onFileClicked();
-              },
-              child: Icon(
-                Icons.folder_open_rounded,
-              )),
-          ElevatedButton(
-              onPressed: () {
-                save();
-              },
-              child: Icon(
-                Icons.save_alt,
-              )),
-        ],
+        appBar: AppBar(
+          title: SearchBar(
+            controller: searchETC,
+            onChanged: (value) {
+              editingDataGridSource?.search(value);
+            },
+          ),
+          actions: [
+            ElevatedButton(
+                onPressed: () {
+                  if (directory != null) {
+                    onFileClicked(lDirectory: directory);
+                  }
+                },
+                child: Icon(
+                  Icons.restore_outlined,
+                )),
+            ElevatedButton(
+                onPressed: () {
+                  scrollController.scrollToRow(
+                      editingDataGridSource!.rows.length - 1,
+                      canAnimate: true);
+                },
+                child: Icon(
+                  Icons.downhill_skiing_outlined,
+                )),
+            ElevatedButton(
+                onPressed: () {
+                  onFileClicked();
+                },
+                child: Icon(
+                  Icons.folder_open_rounded,
+                )),
+            ElevatedButton(
+                onPressed: () {
+                  save();
+                },
+                child: Icon(
+                  Icons.save_alt,
+                )),
+          ],
+        ),
+        body: editingDataGridSource == null
+            ? Container()
+            : SfDataGrid(
+                controller: scrollController,
+                isScrollbarAlwaysShown: true,
+                source: editingDataGridSource!,
+                allowEditing: true,
+                navigationMode: GridNavigationMode.cell,
+                selectionMode: SelectionMode.single,
+                editingGestureType: editingGestureType,
+                allowColumnsResizing: true,
+                columnWidthMode: isWebOrDesktop
+                    ? ColumnWidthMode.none
+                    : ColumnWidthMode.fill,
+                columns: <GridColumn>[
+                  GridColumn(
+                      columnName: 'key',
+                      columnWidthMode: ColumnWidthMode.fill,
+                      label: Container(
+                        padding: const EdgeInsets.all(8.0),
+                        alignment: Alignment.centerRight,
+                        child: const Text(
+                          'Product No',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      )),
+                  GridColumn(
+                      columnName: 'value1',
+                      columnWidthMode: ColumnWidthMode.fill,
+                      label: Container(
+                        padding: const EdgeInsets.all(8.0),
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          filesContent[0]
+                              .$2
+                              .split(Platform.isMacOS ? '/' : '\\')
+                              .last
+                              .replaceAll('.i18n.json', ''),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      )),
+                  GridColumn(
+                      columnName: 'value2',
+                      columnWidthMode: ColumnWidthMode.fill,
+                      label: Container(
+                        padding: const EdgeInsets.all(8.0),
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          filesContent[1]
+                              .$2
+                              .split(Platform.isMacOS ? '/' : '\\')
+                              .last
+                              .replaceAll('.i18n.json', ''),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      )),
+                  GridColumn(
+                      columnName: 'value3',
+                      columnWidthMode: ColumnWidthMode.fill,
+                      label: Container(
+                        padding: const EdgeInsets.all(8.0),
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          filesContent[2]
+                              .$2
+                              .split(Platform.isMacOS ? '/' : '\\')
+                              .last
+                              .replaceAll('.i18n.json', ''),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      )),
+                ],
+              ),
       ),
-      body: editingDataGridSource == null
-          ? Container()
-          : SfDataGrid(
-              isScrollbarAlwaysShown: true,
-              source: editingDataGridSource!,
-              allowEditing: true,
-              navigationMode: GridNavigationMode.cell,
-              selectionMode: SelectionMode.single,
-              editingGestureType: editingGestureType,
-              allowColumnsResizing: true,
-              columnWidthMode:
-                  isWebOrDesktop ? ColumnWidthMode.none : ColumnWidthMode.fill,
-              columns: <GridColumn>[
-                GridColumn(
-                    columnName: 'key',
-                    columnWidthMode: ColumnWidthMode.fill,
-                    label: Container(
-                      padding: const EdgeInsets.all(8.0),
-                      alignment: Alignment.centerRight,
-                      child: const Text(
-                        'Product No',
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    )),
-                GridColumn(
-                    columnName: 'value1',
-                    columnWidthMode: ColumnWidthMode.fill,
-                    label: Container(
-                      padding: const EdgeInsets.all(8.0),
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        filesContent[0]
-                            .$2
-                            .split(Platform.isMacOS ? '/' : '\\')
-                            .last
-                            .replaceAll('.i18n.json', ''),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    )),
-                GridColumn(
-                    columnName: 'value2',
-                    columnWidthMode: ColumnWidthMode.fill,
-                    label: Container(
-                      padding: const EdgeInsets.all(8.0),
-                      alignment: Alignment.centerRight,
-                      child: Text(
-                        filesContent[1]
-                            .$2
-                            .split(Platform.isMacOS ? '/' : '\\')
-                            .last
-                            .replaceAll('.i18n.json', ''),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    )),
-                GridColumn(
-                    columnName: 'value3',
-                    columnWidthMode: ColumnWidthMode.fill,
-                    label: Container(
-                      padding: const EdgeInsets.all(8.0),
-                      alignment: Alignment.centerRight,
-                      child: Text(
-                        filesContent[2]
-                            .$2
-                            .split(Platform.isMacOS ? '/' : '\\')
-                            .last
-                            .replaceAll('.i18n.json', ''),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    )),
-              ],
-            ),
     );
   }
 
-  void onFileClicked() async {
+  void onFileClicked({String? lDirectory}) async {
     //here we will select folder directory
     // then we will read all .json files from that folder
 
-    final directory = await pickFolder();
+    directory = lDirectory ?? await pickFolder();
     if (directory != null) {
-      var tFiles = await readFolderFiles(directory);
+      var tFiles = await readFolderFiles(directory!);
       files = tFiles.map((e) => (e as File, e.path)).toList();
       // filesContent = tFiles.map((e) => ((e as File).readAsString(), e.path)).toList();;
 
@@ -223,7 +277,7 @@ class _MyHomePageState extends State<MyHomePage> {
         .keys
         .toList();
 
-    listOfKeys.sort((a, b) => a.compareTo(b));
+    // listOfKeys.sort((a, b) => a.compareTo(b));
 
     for (var i = 0; i < numberOfFiles; i++) {
       var fileContent = filesContent[i];
@@ -244,6 +298,24 @@ class _MyHomePageState extends State<MyHomePage> {
     editingDataGridSource = MyDataGridSource(
       filesContent: data,
     );
+
+    showDialog(
+        context: context,
+        builder: (context) {
+          Future.delayed(Duration(seconds: 3), () {
+            if (mounted) Navigator.pop(context);
+          });
+          return AlertDialog(
+            title: const Text('Statistics'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Number of files: $numberOfFiles'),
+                Text('Number of keys: $numberOfKeys'),
+              ],
+            ),
+          );
+        });
 
     setState(() {});
   }
@@ -304,6 +376,91 @@ class _MyHomePageState extends State<MyHomePage> {
     newArabicFile.writeAsStringSync(arabicJson);
     newKurdishFile.writeAsStringSync(kurdishJson);
   }
+
+  void addNewRow() async {
+    //show dialog to enter new key
+    var key = '';
+    bool submit = false;
+    var keyTEC = TextEditingController();
+    var focusNode = FocusNode();
+    focusNode.requestFocus();
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Enter new key'),
+          content: TextField(
+            controller: keyTEC,
+            focusNode: focusNode,
+            onSubmitted: (value) {
+              submit = true;
+              Navigator.pop(context, key);
+            },
+            onChanged: (value) {
+              key = value;
+              // first character should be a letter
+              //  [a-zA-Z_][a-zA-Z0-9_]
+
+              if (value.isEmpty) {
+                return;
+              }
+
+              if (value[0].contains(RegExp(r'[a-zA-Z_]'))) {
+                return;
+              }
+
+              keyTEC.text = key;
+            },
+          ),
+          actions: [
+            ElevatedButton(
+                onPressed: () {
+                  key = '';
+                  Navigator.pop(context);
+                },
+                child: const Text('Cancel')),
+            ElevatedButton(
+                onPressed: () {
+                  submit = true;
+                  Navigator.pop(context, key);
+                },
+                child: const Text('Add')),
+          ],
+        );
+      },
+    );
+
+    if (key.isEmpty || !submit) {
+      return;
+    }
+
+    //check if the key is already exists in the data
+
+    var data = editingDataGridSource!.getAllData();
+    var keys = data.map((e) => e[0]).toList();
+    if (keys.contains(key)) {
+      return;
+    }
+
+    var newRow = List.generate(data[0].length, (index) {
+      if (index == 0) return key;
+      return '';
+    });
+    data.add(newRow);
+    editingDataGridSource = MyDataGridSource(
+      filesContent: data,
+    );
+    Future.delayed(Duration(milliseconds: 100), () {
+      scrollController.scrollToRow(data.length - 1, canAnimate: true);
+    });
+    setState(() {});
+  }
+
+  void reLoadDataFromDisk() {
+    editingDataGridSource = MyDataGridSource(
+      filesContent: editingDataGridSource!.filesContentOriginal,
+    );
+  }
 }
 
 class MyDataGridSource extends DataGridSource {
@@ -351,24 +508,55 @@ class MyDataGridSource extends DataGridSource {
   DataGridRowAdapter buildRow(DataGridRow row) {
     return DataGridRowAdapter(
       cells: row.getCells().map<Widget>((e) {
-        return Container(
-          decoration: BoxDecoration(
-            border: Border(
-              right: BorderSide(color: Colors.grey.withOpacity(0.2)),
+        return Builder(builder: (context) {
+          return GestureDetector(
+            onSecondaryTapDown: (details) {
+              //show menu to delete the row
+              var offcet = details.globalPosition;
+              showMenu(
+                  context: context,
+                  position: RelativeRect.fromLTRB(
+                      offcet.dx, offcet.dy, offcet.dx, offcet.dy),
+                  items: [
+                    PopupMenuItem(
+                      child: Text('Copy'),
+                      value: 'copy',
+                      mouseCursor: SystemMouseCursors.click,
+                    ),
+                    PopupMenuItem(
+                      child: Text('Delete "${e.value}"'),
+                      value: 'delete',
+                      mouseCursor: SystemMouseCursors.click,
+                    ),
+                  ]).then((value) {
+                if (value == 'delete') {
+                  deleteRow(row);
+                } else if (value == 'copy') {
+                  Clipboard.setData(ClipboardData(text: e.value.toString()));
+                }
+              });
+            },
+            child: Container(
+              decoration: BoxDecoration(
+                color: e.value.toString().isEmpty ? Colors.red : null,
+                border: Border(
+                  right: BorderSide(color: Colors.grey.withOpacity(0.2)),
+                ),
+              ),
+              padding: const EdgeInsets.all(2.0),
+              alignment: e.value.toString().contains(RegExp(r'[\u0600-\u06FF]'))
+                  ? Alignment.centerRight
+                  : Alignment.centerLeft,
+              child: Text(
+                e.value.toString(),
+                textDirection:
+                    e.value.toString().contains(RegExp(r'[\u0600-\u06FF]'))
+                        ? TextDirection.rtl
+                        : TextDirection.ltr,
+              ),
             ),
-          ),
-          padding: const EdgeInsets.all(2.0),
-          alignment: e.value.toString().contains(RegExp(r'[\u0600-\u06FF]'))
-              ? Alignment.centerRight
-              : Alignment.centerLeft,
-          child: Text(
-            e.value.toString(),
-            textDirection:
-                e.value.toString().contains(RegExp(r'[\u0600-\u06FF]'))
-                    ? TextDirection.rtl
-                    : TextDirection.ltr,
-          ),
-        );
+          );
+        });
       }).toList(),
     );
   }
@@ -448,48 +636,6 @@ class MyDataGridSource extends DataGridSource {
 
       newCellValue = null;
       return;
-
-      if (column.columnName == 'key') {
-        int rowKey = 0;
-        var value1 = dataGridRows[dataRowIndex].getCells()[1].value;
-        var value2 = dataGridRows[dataRowIndex].getCells()[2].value;
-        var value3 = dataGridRows[dataRowIndex].getCells()[3].value;
-        var file1 = filesContent[0];
-        var file2 = filesContent[1];
-        var file3 = filesContent[2];
-        file1[rowKey] = value1;
-        file2[rowKey] = value2;
-        file3[rowKey] = value3;
-      } else if (column.columnName == 'value1') {
-        int rowKey = 1;
-        var value1 = newCellValue;
-        var value2 = dataGridRows[dataRowIndex].getCells()[2].value;
-        var value3 = dataGridRows[dataRowIndex].getCells()[3].value;
-        var file1 = filesContent[0];
-        var file2 = filesContent[1];
-        var file3 = filesContent[2];
-        file1[rowKey] = value1;
-        file2[rowKey] = value2;
-        file3[rowKey] = value3;
-      } else if (column.columnName == 'value2') {
-        int rowKey = 2;
-        var value1 = dataGridRows[dataRowIndex].getCells()[1].value;
-        var value2 = newCellValue;
-        var value3 = dataGridRows[dataRowIndex].getCells()[3].value;
-        var file1 = filesContent[0];
-        var file2 = filesContent[1];
-        var file3 = filesContent[2];
-        file1[rowKey] = value1;
-        file2[rowKey] = value2;
-        file3[rowKey] = value3;
-      } else if (column.columnName == 'value3') {
-        int rowKey = 3;
-        filesContent[0][rowKey] = dataGridRows[dataRowIndex]
-            .getCells()[1]
-            .value
-            .toString()
-            .replaceAll('.i18n.json', '');
-      } else {}
     }
   }
 
@@ -546,6 +692,18 @@ class MyDataGridSource extends DataGridSource {
       return DataGridRow(cells: cells);
     }).toList();
 
+    notifyListeners();
+  }
+
+  void deleteRow(DataGridRow row) {
+    //print row content
+    var cells = row.getCells();
+    var rowContent = cells.map((e) => e.value).toList();
+    print(rowContent);
+
+    var index = dataGridRows.indexOf(row);
+    dataGridRows.removeAt(index);
+    filesContent.removeAt(index);
     notifyListeners();
   }
 }
