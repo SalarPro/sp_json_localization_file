@@ -151,51 +151,22 @@ class _MyHomePageState extends State<MyHomePage> {
                           overflow: TextOverflow.ellipsis,
                         ),
                       )),
-                  GridColumn(
-                      columnName: 'value1',
-                      columnWidthMode: ColumnWidthMode.fill,
-                      label: Container(
-                        padding: const EdgeInsets.all(8.0),
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          filesContent[0]
-                              .$2
-                              .split(Platform.isMacOS ? '/' : '\\')
-                              .last
-                              .replaceAll('.i18n.json', ''),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      )),
-                  GridColumn(
-                      columnName: 'value2',
-                      columnWidthMode: ColumnWidthMode.fill,
-                      label: Container(
-                        padding: const EdgeInsets.all(8.0),
-                        alignment: Alignment.centerRight,
-                        child: Text(
-                          filesContent[1]
-                              .$2
-                              .split(Platform.isMacOS ? '/' : '\\')
-                              .last
-                              .replaceAll('.i18n.json', ''),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      )),
-                  GridColumn(
-                      columnName: 'value3',
-                      columnWidthMode: ColumnWidthMode.fill,
-                      label: Container(
-                        padding: const EdgeInsets.all(8.0),
-                        alignment: Alignment.centerRight,
-                        child: Text(
-                          filesContent[2]
-                              .$2
-                              .split(Platform.isMacOS ? '/' : '\\')
-                              .last
-                              .replaceAll('.i18n.json', ''),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      )),
+                  for (var i = 0; i < filesContent.length; i++)
+                    GridColumn(
+                        columnName: 'value$i',
+                        columnWidthMode: ColumnWidthMode.fill,
+                        label: Container(
+                          padding: const EdgeInsets.all(8.0),
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            filesContent[i]
+                                .$2
+                                .split(Platform.isMacOS ? '/' : '\\')
+                                .last
+                                .replaceAll('.i18n.json', ''),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        )),
                 ],
               ),
       ),
@@ -284,7 +255,7 @@ class _MyHomePageState extends State<MyHomePage> {
       var content = fileContent.$1;
       for (var j = 0; j < listOfKeys.length; j++) {
         var key = listOfKeys[j];
-        var value = content[key] ?? "=====================";
+        var value = content[key] ?? "";
         if (i == 0) {
           data[j][0] = listOfKeys[j];
         }
@@ -350,6 +321,9 @@ class _MyHomePageState extends State<MyHomePage> {
     var english = <String, String>{};
     var arabic = <String, String>{};
     var kurdish = <String, String>{};
+    var kurdishSr = <String, String>{};
+
+    // var csvFileData = "id,english,arabic,badini,sorani\n";
 
     for (var i = 0; i < data.length; i++) {
       var row = data[i];
@@ -358,9 +332,28 @@ class _MyHomePageState extends State<MyHomePage> {
       var value2 = row[2];
       var value3 = row[3];
 
+      // csvFileData += "$key,${value1 ?? ''},$value2,$value3,$value3\n";
+
+      for (var j = 0; j < data[i].length; j++) {
+        var value = data[i][j];
+        if (value == null) {
+          data[i][j] = '';
+        }
+      }
+
+      // if ("$key,$value1,$value2,$value3".toLowerCase().contains('fastday')) {
+      //   continue;
+      // }
+      // csvFileData +=
+      //     "${"$key,$value1,$value2,$value3".replaceAll('\n', 'NNLL')}\n";
+
       english[key] = value1;
       arabic[key] = value2;
       kurdish[key] = value3;
+      if (filesContent.length == 4) {
+        var value4 = row[4];
+        kurdishSr[key] = value4;
+      }
     }
 
     var englishJson = jsonEncode(english);
@@ -375,6 +368,16 @@ class _MyHomePageState extends State<MyHomePage> {
     newEnglishFile.writeAsStringSync(englishJson);
     newArabicFile.writeAsStringSync(arabicJson);
     newKurdishFile.writeAsStringSync(kurdishJson);
+    if (filesContent.length == 4) {
+      var kurdishSrJson = jsonEncode(kurdishSr);
+      File newKurdishSrFile;
+      newKurdishSrFile = File(filesContent[3].$2);
+      newKurdishSrFile.writeAsStringSync(kurdishSrJson);
+    }
+
+    //save in csv file
+    // File csvFile = File('${directory}/strings.csv');
+    // csvFile.writeAsStringSync(csvFileData);
   }
 
   void addNewRow() async {
@@ -575,8 +578,9 @@ class MyDataGridSource extends DataGridSource {
 
   Widget _buildTextFieldWidget(
       String displayText, GridColumn column, CellSubmit submitCell) {
-    final bool isEn =
-        column.columnName.contains('ar') || column.columnName.contains('ku');
+    final bool isEn = column.columnName.contains('ar') ||
+        column.columnName.contains('ku') ||
+        column.columnName.contains('ks');
 
     return Container(
       padding: const EdgeInsets.all(8.0),
