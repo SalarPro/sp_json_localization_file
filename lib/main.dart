@@ -74,30 +74,60 @@ class _MyHomePageState extends State<MyHomePage> {
         },
       },
       child: Scaffold(
-        floatingActionButtonLocation: FloatingActionButtonLocation.startTop,
-        floatingActionButton: FloatingActionButton(
-          onPressed: () {
-            addNewRow();
-          },
-          child: Icon(
-            Icons.add,
-          ),
-        ),
         appBar: AppBar(
-          title: SearchBar(
-            controller: searchETC,
-            onChanged: (value) {
-              editingDataGridSource?.search(value);
-            },
+          title: Row(
+            children: [
+              IconButton(
+                onPressed: () {
+                  addNewRow();
+                },
+                icon: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.green,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.add,
+                    color: Colors.white,
+                    size: 50,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: SearchBar(
+                  controller: searchETC,
+                  onChanged: (value) {
+                    editingDataGridSource?.search(value);
+                  },
+                  trailing: [
+                    IconButton(
+                      onPressed: () {
+                        searchETC.clear();
+                        editingDataGridSource?.clearSearch(context);
+                      },
+                      icon: Icon(Icons.clear),
+                    )
+                  ],
+                ),
+              ),
+            ],
           ),
           actions: [
-            ElevatedButton(
+            IconButton(
+                onPressed: () {
+                  Clipboard.setData(
+                      ClipboardData(text: 'flutter pub run slang'));
+                },
+                icon: Icon(
+                  Icons.copy,
+                )),
+            IconButton(
                 onPressed: () {
                   if (directory != null) {
                     onFileClicked(lDirectory: directory);
                   }
                 },
-                child: Icon(
+                icon: Icon(
                   Icons.restore_outlined,
                 )),
             ElevatedButton(
@@ -334,12 +364,12 @@ class _MyHomePageState extends State<MyHomePage> {
 
       // csvFileData += "$key,${value1 ?? ''},$value2,$value3,$value3\n";
 
-      for (var j = 0; j < data[i].length; j++) {
-        var value = data[i][j];
-        if (value == null) {
-          data[i][j] = '';
-        }
-      }
+      // for (var j = 0; j < data[i].length; j++) {
+      //   var value = data[i][j];
+      //   if (value == null) {
+      //     data[i][j] = '';
+      //   }
+      // }
 
       // if ("$key,$value1,$value2,$value3".toLowerCase().contains('fastday')) {
       //   continue;
@@ -482,6 +512,7 @@ class MyDataGridSource extends DataGridSource {
     buildDataGridRow();
   }
 
+  //MARK: Orginal file
   List<List<String>> filesContentOriginal = [];
   List<List<String>> filesContent = [];
 
@@ -619,24 +650,44 @@ class MyDataGridSource extends DataGridSource {
     var cell = dataGridRow.getCells()[rowColumnIndex.columnIndex];
     var oldValue = cell.value;
 
-    if (oldValue is String) {
+    if (oldValue is String && newCellValue is String) {
       final int dataRowIndex = dataGridRows.indexOf(dataGridRow);
+      // print('dataRowIndex: $dataRowIndex');
 
-      if (newCellValue == null || oldValue == newCellValue) {
-        return;
-      }
+      // final int dataRowIndex = dataGridRows.indexOf(dataGridRow);
+
+      // if (newCellValue == null || oldValue == newCellValue) {
+      //   return;
+      // }
 
       var columnIndex = rowColumnIndex.columnIndex;
+      // print('Column Index: $columnIndex ');
+
+      // print(
+      //     "${filesContent[dataRowIndex][0]}: ${filesContent[dataRowIndex][columnIndex]}");
+
+      var keyName = filesContent[dataRowIndex][0];
+
+      //get the key name index from the fileContentOriginal
+      var keyIndex =
+          filesContentOriginal.indexWhere((element) => element[0] == keyName);
+
+      filesContentOriginal[keyIndex][columnIndex] = newCellValue;
+
       var rowIndex = rowColumnIndex.rowIndex;
-
-      print('${column.columnName} : $columnIndex $rowIndex');
-
       filesContent[rowIndex][columnIndex] = newCellValue;
-      filesContentOriginal = filesContent.map((e) => e).toList();
+      dataGridRows[rowIndex].getCells()[columnIndex] = DataGridCell<String>(
+          columnName: column.columnName, value: newCellValue);
 
-      dataGridRows[dataRowIndex].getCells()[rowColumnIndex.columnIndex] =
-          DataGridCell<String>(
-              columnName: column.columnName, value: newCellValue);
+      // print('${column.columnName} : $columnIndex $rowIndex');
+
+      // filesContentOriginal = filesContent.map((e) => e).toList();
+
+      // dataGridRows[dataRowIndex].getCells()[rowColumnIndex.columnIndex] =
+      //     DataGridCell<String>(
+      //         columnName: column.columnName, value: newCellValue);
+      print(
+          "$keyIndex:: ${filesContentOriginal[keyIndex][0]}: ${filesContentOriginal[keyIndex][columnIndex]} :::::::: $newCellValue ||| $rowIndex:$columnIndex");
 
       newCellValue = null;
       return;
@@ -681,12 +732,16 @@ class MyDataGridSource extends DataGridSource {
   }
 
   search(String text) {
-    var newData = filesContent.where((element) {
-      var key = element[0];
-      return key.contains(text);
+    filesContent = filesContentOriginal.where((element) {
+      var key = '';
+      for (var i = 0; i < element.length; i++) {
+        key += element[i];
+      }
+      return key.toLowerCase().contains(text.toLowerCase());
     }).toList();
 
-    dataGridRows = newData.map((element) {
+    // Update dataGridRows based on the updated filesContent
+    dataGridRows = filesContent.map((element) {
       var cells = element.map((e) {
         return DataGridCell<String>(
           columnName: e.toString(),
@@ -696,6 +751,32 @@ class MyDataGridSource extends DataGridSource {
       return DataGridRow(cells: cells);
     }).toList();
 
+    notifyListeners();
+  }
+
+  clearSearch(context) {
+    FocusScope.of(context).unfocus();
+    filesContent = filesContentOriginal.map((e) => e).toList();
+    dataGridRows = filesContent.map((element) {
+      var cells = element.map((e) {
+        return DataGridCell<String>(
+          columnName: e.toString(),
+          value: e,
+        );
+      }).toList();
+      return DataGridRow(cells: cells);
+    }).toList();
+    notifyListeners();
+    filesContent = filesContentOriginal.map((e) => e).toList();
+    dataGridRows = filesContent.map((element) {
+      var cells = element.map((e) {
+        return DataGridCell<String>(
+          columnName: e.toString(),
+          value: e,
+        );
+      }).toList();
+      return DataGridRow(cells: cells);
+    }).toList();
     notifyListeners();
   }
 
