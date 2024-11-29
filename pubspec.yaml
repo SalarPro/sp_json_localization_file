@@ -34,6 +34,7 @@ dependencies:
     sdk: flutter
   flutter_launcher_icons: ^0.13.1
   syncfusion_flutter_datagrid: ^24.1.41
+  win32: ^5.9.0
 
 dev_dependencies:
   flutter_lints: ^2.0.0

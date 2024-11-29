@@ -208,6 +208,8 @@ class _MyHomePageState extends State<MyHomePage> {
     // then we will read all .json files from that folder
 
     directory = lDirectory ?? await pickFolder();
+
+    print('00000000');
     if (directory != null) {
       var tFiles = await readFolderFiles(directory!);
       files = tFiles.map((e) => (e as File, e.path)).toList();
@@ -215,15 +217,17 @@ class _MyHomePageState extends State<MyHomePage> {
 
       filesContent = [];
       for (var file in files) {
+        //print file name
         var content = await file.$1.readAsString();
         var jsonFile = jsonDecode(content);
         var keys = jsonFile.keys.toList();
         var values = jsonFile.values.toList();
         var fileContent = <String, String>{};
+
         for (var i = 0; i < keys.length; i++) {
           var key = keys[i];
           var value = values[i];
-          fileContent[key] = value;
+          fileContent[key] = "$value";
         }
         filesContent.add((fileContent, file.$2));
       }
@@ -254,6 +258,8 @@ class _MyHomePageState extends State<MyHomePage> {
     // minemam columnt are 2 the first is the key and the second is the value of the key in first file, there are N+1 Columns N is the number of files
     // the first column is the key and the other columns are the values of the key in each file
 
+    print("111111");
+
     var numberOfFiles = filesContent.length;
     var numberOfColumns = numberOfFiles + 1;
     var numberOfKeys = filesContent
@@ -264,12 +270,16 @@ class _MyHomePageState extends State<MyHomePage> {
         .length;
     var numberOfRows = numberOfKeys;
 
+    print("222222");
+
     var data = List.generate(numberOfRows, (index) {
       var row = List.generate(numberOfColumns, (index) {
         return '';
       });
       return row;
     });
+
+    print("333333");
 
     var listOfKeys = filesContent
         .where((element) => element.$2.contains('strings.i18n.json'))
@@ -278,27 +288,38 @@ class _MyHomePageState extends State<MyHomePage> {
         .keys
         .toList();
 
+    print("444444");
+
     // listOfKeys.sort((a, b) => a.compareTo(b));
 
     for (var i = 0; i < numberOfFiles; i++) {
-      var fileContent = filesContent[i];
-      var content = fileContent.$1;
-      for (var j = 0; j < listOfKeys.length; j++) {
-        var key = listOfKeys[j];
-        var value = content[key] ?? "";
-        if (i == 0) {
-          data[j][0] = listOfKeys[j];
+      try {
+        var fileContent = filesContent[i];
+        var content = fileContent.$1;
+        for (var j = 0; j < listOfKeys.length; j++) {
+          var key = listOfKeys[j];
+          var value = content[key] ?? "";
+          if (i == 0) {
+            data[j][0] = listOfKeys[j];
+          }
+          if (value == '') {
+            print('${key} in $i');
+          }
+          data[j][i + 1] = value;
         }
-        if (value == '') {
-          print('${key} in $i');
-        }
-        data[j][i + 1] = value;
+      } on Exception catch (e) {
+        print("12315313");
+        print(e);
       }
     }
+
+    print("555555");
 
     editingDataGridSource = MyDataGridSource(
       filesContent: data,
     );
+
+    print("666666");
 
     showDialog(
         context: context,
@@ -317,6 +338,8 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
           );
         });
+
+    print("777777");
 
     setState(() {});
   }
